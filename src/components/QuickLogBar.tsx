@@ -1,27 +1,64 @@
 'use client';
 
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { BEVERAGES } from '../store/hydrationStore';
 import { BeverageType } from '../types';
-import { Plus, X } from 'lucide-react';
+import { 
+  WaterIcon, 
+  TeaIcon, 
+  CoffeeIcon, 
+  JuiceIcon, 
+  ElectrolyteIcon 
+} from './DrinkIcons';
+import { Plus, X, Sparkles } from 'lucide-react';
 
 interface QuickLogBarProps {
   onLogDrink: (type: BeverageType, amountMl?: number) => void;
 }
 
+interface FlyingDroplet {
+  id: number;
+  startX: number;
+  startY: number;
+  color: string;
+}
+
 export const QuickLogBar: React.FC<QuickLogBarProps> = ({ onLogDrink }) => {
   const [isCustomOpen, setIsCustomOpen] = useState(false);
   const [customType, setCustomType] = useState<BeverageType>('water');
-  const [customAmount, setCustomAmount] = useState(300);
+  const [customAmount, setCustomAmount] = useState(250);
+  const [flyingDroplets, setFlyingDroplets] = useState<FlyingDroplet[]>([]);
 
-  const handleQuickTap = (type: BeverageType) => {
+  const handleQuickTap = (type: BeverageType, e: React.MouseEvent<HTMLButtonElement>) => {
+    // 1. Haptic feedback
     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
       try {
         navigator.vibrate(18);
-      } catch (e) {
+      } catch (err) {
         // ignore
       }
     }
+
+    // 2. Flying splash droplet micro-animation
+    const rect = e.currentTarget.getBoundingClientRect();
+    const dropletId = Date.now();
+    const color = BEVERAGES[type].color;
+
+    setFlyingDroplets((prev) => [
+      ...prev,
+      {
+        id: dropletId,
+        startX: rect.left + rect.width / 2,
+        startY: rect.top,
+        color,
+      },
+    ]);
+
+    setTimeout(() => {
+      setFlyingDroplets((prev) => prev.filter((d) => d.id !== dropletId));
+    }, 700);
+
     onLogDrink(type);
   };
 
@@ -31,92 +68,140 @@ export const QuickLogBar: React.FC<QuickLogBarProps> = ({ onLogDrink }) => {
     setIsCustomOpen(false);
   };
 
-  const beverageList: BeverageType[] = ['water', 'green_tea', 'coffee', 'juice', 'electrolyte'];
+  const beverageButtons: { type: BeverageType; Icon: React.FC<{ size?: number }>; label: string; amount: number }[] = [
+    { type: 'water', Icon: WaterIcon, label: 'Water', amount: 250 },
+    { type: 'green_tea', Icon: TeaIcon, label: 'Tea', amount: 200 },
+    { type: 'coffee', Icon: CoffeeIcon, label: 'Coffee', amount: 150 },
+    { type: 'juice', Icon: JuiceIcon, label: 'Juice', amount: 250 },
+    { type: 'electrolyte', Icon: ElectrolyteIcon, label: 'Hydrate', amount: 350 },
+  ];
 
   return (
     <>
-      {/* Floating Bottom Dock Bar */}
-      <div className="fixed bottom-4 inset-x-0 z-40 px-4 pointer-events-none flex justify-center">
-        <div className="w-full max-w-md pointer-events-auto bg-white/95 backdrop-blur-xl border border-stone-200/90 rounded-3xl p-2.5 shadow-2xl flex items-center justify-between gap-2">
-          {beverageList.map((type) => {
-            const item = BEVERAGES[type];
-            return (
-              <button
-                key={type}
-                onClick={() => handleQuickTap(type)}
-                className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-2xl hover:bg-stone-100 active:scale-90 transition-all duration-150 group"
-              >
-                <span className="text-2xl group-hover:scale-110 transition-transform">
-                  {item.icon}
-                </span>
-                <span className="text-[11px] font-bold text-stone-700 mt-1 whitespace-nowrap">
-                  +{item.defaultAmount}
-                </span>
-                <span className="text-[9px] text-stone-400 font-medium">
-                  {item.label.split(' ')[0]}
-                </span>
-              </button>
-            );
-          })}
+      {/* Flying Splash Droplet Particles */}
+      <AnimatePresence>
+        {flyingDroplets.map((droplet) => (
+          <motion.div
+            key={droplet.id}
+            initial={{
+              position: 'fixed',
+              left: droplet.startX,
+              top: droplet.startY,
+              x: '-50%',
+              y: 0,
+              scale: 0.6,
+              opacity: 1,
+              zIndex: 9999,
+            }}
+            animate={{
+              y: -220,
+              scale: [0.6, 1.4, 0.2],
+              opacity: [1, 1, 0],
+            }}
+            transition={{
+              duration: 0.65,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="pointer-events-none w-5 h-5 rounded-full"
+            style={{
+              backgroundColor: droplet.color,
+              boxShadow: `0 0 16px ${droplet.color}`,
+            }}
+          />
+        ))}
+      </AnimatePresence>
+
+      {/* Minimalist Floating Bottom Dock */}
+      <div className="fixed bottom-6 inset-x-0 z-40 px-4 pointer-events-none flex justify-center">
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="w-full max-w-sm pointer-events-auto bg-white/95 backdrop-blur-2xl border border-stone-200/80 rounded-full py-2 px-3 shadow-xl shadow-stone-200/60 flex items-center justify-between gap-1"
+        >
+          {beverageButtons.map(({ type, Icon, label, amount }) => (
+            <motion.button
+              key={type}
+              whileTap={{ scale: 0.82, y: 2 }}
+              whileHover={{ scale: 1.06 }}
+              transition={{ type: 'spring', stiffness: 450, damping: 18 }}
+              onClick={(e) => handleQuickTap(type, e)}
+              className="flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl hover:bg-stone-50 active:bg-stone-100 transition-colors group relative"
+            >
+              <div className="w-8 h-8 flex items-center justify-center transition-transform group-hover:-translate-y-0.5">
+                <Icon size={24} />
+              </div>
+              <span className="text-[10px] font-bold text-stone-700 tracking-tight mt-0.5">
+                +{amount}
+              </span>
+            </motion.button>
+          ))}
 
           {/* Plus Custom Button */}
-          <button
+          <motion.button
+            whileTap={{ scale: 0.85 }}
+            whileHover={{ scale: 1.08 }}
             onClick={() => setIsCustomOpen(true)}
-            className="w-11 h-11 rounded-2xl bg-sky-600 text-white flex items-center justify-center hover:bg-sky-500 active:scale-95 transition-all shadow-md flex-shrink-0"
-            title="Custom volume"
+            className="w-9 h-9 rounded-full bg-stone-900 text-white flex items-center justify-center hover:bg-stone-800 transition-colors shadow-md flex-shrink-0 ml-1"
+            title="Custom intake"
           >
-            <Plus className="w-5 h-5" />
-          </button>
-        </div>
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+          </motion.button>
+        </motion.div>
       </div>
 
-      {/* Custom Amount Modal */}
+      {/* Minimalist Custom Intake Modal */}
       {isCustomOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-stone-100 relative">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <motion.div 
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-stone-100 relative"
+          >
             <button
               onClick={() => setIsCustomOpen(false)}
-              className="absolute top-4 right-4 text-stone-400 hover:text-stone-700 p-1"
+              className="absolute top-4 right-4 text-stone-400 hover:text-stone-700 p-1 rounded-full hover:bg-stone-100"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-lg font-bold text-stone-800 mb-4">Log Custom Beverage</h3>
+            <h3 className="text-base font-extrabold text-stone-900 tracking-tight mb-4">
+              Log Drink
+            </h3>
 
-            <form onSubmit={handleCustomSubmit} className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-stone-500 block mb-2">
-                  Select Drink Type
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {Object.keys(BEVERAGES).map((key) => {
-                    const b = BEVERAGES[key as BeverageType];
-                    const isSelected = customType === key;
-                    return (
-                      <button
-                        type="button"
-                        key={key}
-                        onClick={() => setCustomType(key as BeverageType)}
-                        className={`flex flex-col items-center p-2.5 rounded-2xl border text-xs font-semibold transition-all ${
-                          isSelected
-                            ? 'border-sky-500 bg-sky-50 text-sky-800 shadow-sm'
-                            : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50'
-                        }`}
-                      >
-                        <span className="text-xl mb-1">{b.icon}</span>
-                        <span>{b.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+            <form onSubmit={handleCustomSubmit} className="space-y-5">
+              {/* Beverage Selector with Bespoke SVGs */}
+              <div className="grid grid-cols-3 gap-2">
+                {beverageButtons.map(({ type, Icon, label }) => {
+                  const isSelected = customType === type;
+                  return (
+                    <button
+                      type="button"
+                      key={type}
+                      onClick={() => setCustomType(type)}
+                      className={`flex flex-col items-center py-2.5 px-2 rounded-2xl border transition-all ${
+                        isSelected
+                          ? 'border-sky-500 bg-sky-50/80 shadow-sm'
+                          : 'border-stone-200/80 bg-white hover:bg-stone-50'
+                      }`}
+                    >
+                      <div className="mb-1">
+                        <Icon size={26} />
+                      </div>
+                      <span className={`text-[11px] font-bold ${isSelected ? 'text-sky-900' : 'text-stone-600'}`}>
+                        {label}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-                    Volume Amount
-                  </label>
-                  <span className="text-sm font-bold text-sky-700">{customAmount} ml</span>
+              {/* Volume Slider */}
+              <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100">
+                <div className="flex justify-between items-baseline mb-2">
+                  <span className="text-xs font-semibold text-stone-500">Amount</span>
+                  <span className="text-xl font-black text-stone-900 font-mono">
+                    {customAmount} <span className="text-xs font-bold text-stone-400">ml</span>
+                  </span>
                 </div>
                 <input
                   type="range"
@@ -125,23 +210,18 @@ export const QuickLogBar: React.FC<QuickLogBarProps> = ({ onLogDrink }) => {
                   step="25"
                   value={customAmount}
                   onChange={(e) => setCustomAmount(Number(e.target.value))}
-                  className="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-sky-600"
+                  className="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-stone-900"
                 />
-                <div className="flex justify-between text-[10px] text-stone-400 mt-1">
-                  <span>50 ml</span>
-                  <span>500 ml</span>
-                  <span>1,000 ml</span>
-                </div>
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-2xl bg-sky-600 text-white font-bold text-sm hover:bg-sky-500 active:scale-98 transition-all shadow-md shadow-sky-600/20"
+                className="w-full py-3.5 rounded-2xl bg-stone-900 text-white font-bold text-sm hover:bg-stone-800 active:scale-98 transition-all shadow-lg shadow-stone-900/10"
               >
-                Splash +{customAmount} ml into Pool
+                Add {customAmount} ml
               </button>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
     </>
