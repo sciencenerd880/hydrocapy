@@ -1,0 +1,17 @@
+{
+  "name": "HydroCapy - Cozy Hydration Tracker",
+  "short_name": "HydroCapy",
+  "description": "Interactive tilt-motion capybara hydration tracker and Bento wellness dashboard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF8F5",
+  "theme_color": "#0284C7",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

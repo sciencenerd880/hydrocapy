@@ -1,0 +1,170 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { BeverageConfig, BeverageType, DrinkLog } from '../types';
+
+export const BEVERAGES: Record<BeverageType, BeverageConfig> = {
+  water: {
+    type: 'water',
+    label: 'Water',
+    icon: '💧',
+    color: '#0284C7', // Sky blue
+    lightColor: '#BAE6FD',
+    hydrationFactor: 1.0,
+    defaultAmount: 250,
+  },
+  green_tea: {
+    type: 'green_tea',
+    label: 'Green Tea',
+    icon: '🍵',
+    color: '#059669', // Emerald
+    lightColor: '#A7F3D0',
+    hydrationFactor: 0.95,
+    defaultAmount: 200,
+  },
+  coffee: {
+    type: 'coffee',
+    label: 'Coffee',
+    icon: '☕',
+    color: '#92400E', // Amber brown
+    lightColor: '#FDE68A',
+    hydrationFactor: 0.8,
+    defaultAmount: 150,
+  },
+  juice: {
+    type: 'juice',
+    label: 'Fresh Juice',
+    icon: '🧃',
+    color: '#EA580C', // Orange
+    lightColor: '#FED7AA',
+    hydrationFactor: 0.85,
+    defaultAmount: 250,
+  },
+  electrolyte: {
+    type: 'electrolyte',
+    label: 'Electrolyte',
+    icon: '⚡',
+    color: '#06B6D4', // Cyan
+    lightColor: '#CFFAFE',
+    hydrationFactor: 1.1,
+    defaultAmount: 350,
+  },
+  soda: {
+    type: 'soda',
+    label: 'Sparkling',
+    icon: '🫧',
+    color: '#6366F1', // Indigo
+    lightColor: '#E0E7FF',
+    hydrationFactor: 0.7,
+    defaultAmount: 330,
+  },
+};
+
+const DEFAULT_GOAL = 2200; // ml
+
+export function useHydration() {
+  const [goalMl, setGoalMl] = useState<number>(DEFAULT_GOAL);
+  const [logs, setLogs] = useState<DrinkLog[]>([]);
+  const [streakDays, setStreakDays] = useState<number>(5);
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
+
+  // Load from localStorage on client
+  useEffect(() => {
+    try {
+      const savedGoal = localStorage.getItem('hydrocapy_goal');
+      const savedLogs = localStorage.getItem('hydrocapy_logs');
+      const savedStreak = localStorage.getItem('hydrocapy_streak');
+
+      if (savedGoal) setGoalMl(Number(savedGoal));
+      if (savedLogs) {
+        setLogs(JSON.parse(savedLogs));
+      } else {
+        // Initial mock logs for a realistic day
+        const mockLogs: DrinkLog[] = [
+          { id: '1', type: 'water', amountMl: 300, timestamp: new Date(Date.now() - 5 * 3600000).toISOString() },
+          { id: '2', type: 'coffee', amountMl: 150, timestamp: new Date(Date.now() - 3.5 * 3600000).toISOString(), caffeineMg: 80 },
+          { id: '3', type: 'water', amountMl: 250, timestamp: new Date(Date.now() - 2 * 3600000).toISOString() },
+          { id: '4', type: 'green_tea', amountMl: 200, timestamp: new Date(Date.now() - 40 * 60000).toISOString(), caffeineMg: 30 },
+        ];
+        setLogs(mockLogs);
+      }
+      if (savedStreak) setStreakDays(Number(savedStreak));
+    } catch (e) {
+      console.warn('Storage access unavailable', e);
+    } finally {
+      setIsLoaded(true);
+    }
+  }, []);
+
+  // Save changes to localStorage
+  useEffect(() => {
+    if (!isLoaded) return;
+    try {
+      localStorage.setItem('hydrocapy_goal', goalMl.toString());
+      localStorage.setItem('hydrocapy_logs', JSON.stringify(logs));
+      localStorage.setItem('hydrocapy_streak', streakDays.toString());
+    } catch (e) {
+      console.warn('Storage save error', e);
+    }
+  }, [goalMl, logs, streakDays, isLoaded]);
+
+  const addDrink = (type: BeverageType, amountMl?: number) => {
+    const config = BEVERAGES[type];
+    const amount = amountMl || config.defaultAmount;
+    const newLog: DrinkLog = {
+      id: Date.now().toString(),
+      type,
+      amountMl: amount,
+      timestamp: new Date().toISOString(),
+      caffeineMg: type === 'coffee' ? 80 : type === 'green_tea' ? 30 : 0,
+    };
+    setLogs((prev) => [newLog, ...prev]);
+  };
+
+  const removeLog = (id: string) => {
+    setLogs((prev) => prev.filter((log) => log.id !== id));
+  };
+
+  const resetToday = () => {
+    setLogs([]);
+  };
+
+  // Total effective hydration considering hydration factors
+  const currentMl = logs.reduce((sum, item) => sum + item.amountMl, 0);
+  const percentage = Math.min(100, Math.round((currentMl / goalMl) * 100));
+
+  // Breakdown by beverage type
+  const breakdown = Object.keys(BEVERAGES).map((key) => {
+    const type = key as BeverageType;
+    const amount = logs.filter((l) => l.type === type).reduce((sum, l) => sum + l.amountMl, 0);
+    return {
+      type,
+      amount,
+      percentage: currentMl > 0 ? Math.round((amount / currentMl) * 100) : 0,
+      config: BEVERAGES[type],
+    };
+  }).filter((item) => item.amount > 0);
+
+  // Hourly pacing delta: Compare against linear expected intake between 8am and 10pm (14 active hours)
+  const now = new Date();
+  const currentHour = now.getHours() + now.getMinutes() / 60;
+  const activeHoursElapsed = Math.max(0, Math.min(14, currentHour - 8));
+  const expectedPacingMl = Math.round((activeHoursElapsed / 14) * goalMl);
+  const pacingDeltaMl = currentMl - expectedPacingMl;
+
+  return {
+    isLoaded,
+    goalMl,
+    setGoalMl,
+    logs,
+    addDrink,
+    removeLog,
+    resetToday,
+    currentMl,
+    percentage,
+    breakdown,
+    streakDays,
+    pacingDeltaMl,
+    expectedPacingMl,
+  };
+}
