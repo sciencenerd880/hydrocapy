@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BEVERAGES } from '../store/hydrationStore';
 import { BeverageType, DrinkLog, CapySkin } from '../types';
 import { soundFx } from '../utils/soundEffects';
-import { Sparkles, Trash2, ChevronDown } from 'lucide-react';
+import { Sparkles, Trash2, ChevronDown, PartyPopper } from 'lucide-react';
 
 interface WaterllamaMascotProps {
   currentMl: number;
@@ -20,6 +20,7 @@ interface WaterllamaMascotProps {
     config: (typeof BEVERAGES)[BeverageType];
   }[];
   activeSkin?: CapySkin;
+  onOpenCelebration?: () => void;
 }
 
 export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
@@ -30,9 +31,13 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
   onRemoveLog,
   breakdown,
   activeSkin = 'onsen',
+  onOpenCelebration,
 }) => {
-  const [showHistory, setShowHistory] = React.useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [isIllustrated, setIsIllustrated] = useState(false);
   const prevPercentageRef = useRef(percentage);
+
+  const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
 
   // Play celebratory chime when passing 100%
   useEffect(() => {
@@ -42,14 +47,13 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
     prevPercentageRef.current = percentage;
   }, [percentage]);
 
-  // Scaled dimensions for Capybara (viewBox 0 0 280 260)
-  // Fillable range: Y from 230 (bottom) down to 40 (ears/top) -> 190px total range
+  // Dimensions for Capybara (viewBox 0 0 280 260)
   const totalFillableHeight = 190;
   const clampedPct = Math.min(100, Math.max(0, percentage));
   const fillHeight = (clampedPct / 100) * totalFillableHeight;
   const liquidTopY = 230 - fillHeight;
 
-  // Ultra-smooth, adorable Capybara silhouette vector path (280 x 260)
+  // Ultra-smooth, adorable Capybara silhouette vector path
   const capySilhouettePath = `
     M 50 230
     C 32 225, 22 185, 28 145
@@ -65,7 +69,7 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
     Z
   `;
 
-  // Calculate stacked multi-beverage liquid layers from bottom up
+  // Stacked multi-beverage liquid layers
   let currentLayerBaseY = 230;
   const layers = breakdown.map((item) => {
     const layerH = (item.amount / goalMl) * totalFillableHeight;
@@ -84,27 +88,42 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
 
   return (
     <div className="w-full flex flex-col items-center select-none">
-      {/* 1. Minimalist Waterllama Header (Screen 11 Style) */}
-      <div className="text-center my-2">
-        <h2 className="text-[11px] font-black text-stone-400 uppercase tracking-widest mb-0.5">
-          Daily Hydration
-        </h2>
-        <div className="flex items-baseline justify-center gap-1.5">
-          <span className="text-5xl font-black text-stone-900 tracking-tight font-mono">
-            {currentMl.toLocaleString()}
-          </span>
-          <span className="text-base font-bold text-stone-400">
-            / {goalMl.toLocaleString()} ml
-          </span>
+      {/* 1. Dynamic Waterllama Header (Screen 19 "Fresh [Day]!" when goal reached) */}
+      {percentage >= 100 ? (
+        <div className="text-center my-2">
+          <h2 className="text-3xl font-black text-sky-500 tracking-tight mb-1">
+            Fresh {dayName}!
+          </h2>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-100/80 text-sky-800 text-xs font-black">
+            <span>{currentMl.toLocaleString()}ml hydration • {percentage}% of your goal 💧</span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-spin" />
+          </div>
         </div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100 text-stone-700 text-xs font-black mt-1">
-          <span>Hydration • {percentage}% of goal 💧</span>
-          {percentage >= 100 && <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-spin" />}
+      ) : (
+        <div className="text-center my-2">
+          <h2 className="text-[11px] font-black text-stone-400 uppercase tracking-widest mb-0.5">
+            Daily Hydration
+          </h2>
+          <div className="flex items-baseline justify-center gap-1.5">
+            <span className="text-5xl font-black text-stone-900 tracking-tight font-mono">
+              {currentMl.toLocaleString()}
+            </span>
+            <span className="text-base font-bold text-stone-400">
+              / {goalMl.toLocaleString()} ml
+            </span>
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100 text-stone-700 text-xs font-black mt-1">
+            <span>Hydration • {percentage}% of goal 💧</span>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* 2. Hero Mascot Container (Large & Tactile, ~60% Visual Presence) */}
-      <div className="relative w-80 h-76 sm:w-92 sm:h-84 my-1 flex items-center justify-center">
+      {/* 2. Hero Mascot Container with Tap to Toggle Illustration */}
+      <div 
+        onClick={() => setIsIllustrated(!isIllustrated)}
+        className="relative w-80 h-76 sm:w-92 sm:h-84 my-1 flex items-center justify-center cursor-pointer group"
+        title="Tap to toggle illustrated character mode"
+      >
         {/* Animated Steam Wisps when hydration is warm & high (>= 75%) */}
         {percentage >= 75 && (
           <div className="absolute top-2 inset-x-0 flex justify-center gap-8 pointer-events-none opacity-60">
@@ -128,115 +147,131 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
 
         <svg
           viewBox="0 0 280 260"
-          className="w-full h-full drop-shadow-xl"
+          className="w-full h-full drop-shadow-xl transition-transform group-hover:scale-[1.02]"
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
-            {/* The Capybara Clip Mask */}
             <clipPath id="capyHeroMask">
               <path d={capySilhouettePath} />
             </clipPath>
 
-            {/* Subtle frosted glass reflection overlay */}
             <linearGradient id="glassContourGrad" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.55" />
               <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.08" />
             </linearGradient>
 
-            {/* Default Water Gradient */}
             <linearGradient id="defaultWaterGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#38BDF8" />
               <stop offset="100%" stopColor="#0284C7" />
             </linearGradient>
+
+            {/* Illustrated Warm Capybara Fur Gradient (Screen 20 Style) */}
+            <linearGradient id="capyFurGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#B48259" />
+              <stop offset="100%" stopColor="#8C5C38" />
+            </linearGradient>
           </defs>
 
-          {/* Background Empty Silhouette Container */}
-          <path
-            d={capySilhouettePath}
-            fill="#F4F4F5"
-            stroke="#E4E4E7"
-            strokeWidth="3.5"
-            strokeLinejoin="round"
-          />
-
-          {/* Liquid Contents Masked to Capybara Shape */}
-          <g clipPath="url(#capyHeroMask)">
-            {/* If no breakdown exists but currentMl > 0, fallback water base */}
-            {layers.length === 0 && percentage > 0 && (
-              <rect
-                x="0"
-                y={liquidTopY}
-                width="280"
-                height="260"
-                fill="url(#defaultWaterGrad)"
-                className="transition-all duration-500 ease-out"
-              />
-            )}
-
-            {/* Multi-Beverage Stratified Layers (Waterllama Style) */}
-            {layers.map((layer, idx) => (
-              <rect
-                key={`${layer.type}-${idx}`}
-                x="0"
-                y={layer.y}
-                width="280"
-                height={layer.height}
-                fill={layer.color}
-                className="transition-all duration-500 ease-out"
-              />
-            ))}
-
-            {/* Top Wave Crest Meniscus */}
-            {percentage > 0 && (
+          {/* Mode 1: Full Illustrated Character (Screen 20 in Photo 2) */}
+          {isIllustrated ? (
+            <g clipPath="url(#capyHeroMask)">
+              {/* Warm Fur Base */}
+              <rect x="0" y="0" width="280" height="260" fill="url(#capyFurGrad)" />
+              {/* Lighter Snout Patch */}
+              <ellipse cx="230" cy="115" rx="35" ry="25" fill="#D2A679" />
+              {/* Belly Soft Shadow */}
+              <ellipse cx="120" cy="210" rx="75" ry="35" fill="#754826" opacity="0.4" />
+              {/* Cute Blushing Rosy Cheek */}
+              <ellipse cx="205" cy="122" rx="9" ry="6" fill="#F87171" opacity="0.45" />
+            </g>
+          ) : (
+            // Mode 2: Signature Stratified Liquid Fill
+            <>
+              {/* Background Empty Silhouette Container */}
               <path
-                d={`
-                  M 0 ${liquidTopY}
-                  Q 70 ${liquidTopY - 6}, 140 ${liquidTopY}
-                  T 280 ${liquidTopY}
-                  V 260 H 0 Z
-                `}
-                fill="#FFFFFF"
-                fillOpacity="0.25"
-                className="animate-wave-pulse"
+                d={capySilhouettePath}
+                fill="#F4F4F5"
+                stroke="#E4E4E7"
+                strokeWidth="3.5"
+                strokeLinejoin="round"
               />
-            )}
 
-            {/* Internal effervescent bubbles */}
-            {percentage > 10 && (
-              <g fill="#FFFFFF" fillOpacity="0.45">
-                <circle cx="90" cy={liquidTopY + 30} r="3" />
-                <circle cx="160" cy={liquidTopY + 50} r="4" />
-                <circle cx="130" cy={liquidTopY + 80} r="2.5" />
-                <circle cx="200" cy={liquidTopY + 40} r="3.5" />
+              {/* Liquid Contents Masked to Capybara Shape */}
+              <g clipPath="url(#capyHeroMask)">
+                {layers.length === 0 && percentage > 0 && (
+                  <rect
+                    x="0"
+                    y={liquidTopY}
+                    width="280"
+                    height="260"
+                    fill="url(#defaultWaterGrad)"
+                    className="transition-all duration-500 ease-out"
+                  />
+                )}
+
+                {/* Multi-Beverage Stratified Layers */}
+                {layers.map((layer, idx) => (
+                  <rect
+                    key={`${layer.type}-${idx}`}
+                    x="0"
+                    y={layer.y}
+                    width="280"
+                    height={layer.height}
+                    fill={layer.color}
+                    className="transition-all duration-500 ease-out"
+                  />
+                ))}
+
+                {/* Wave Crest Meniscus */}
+                {percentage > 0 && (
+                  <path
+                    d={`
+                      M 0 ${liquidTopY}
+                      Q 70 ${liquidTopY - 6}, 140 ${liquidTopY}
+                      T 280 ${liquidTopY}
+                      V 260 H 0 Z
+                    `}
+                    fill="#FFFFFF"
+                    fillOpacity="0.25"
+                    className="animate-wave-pulse"
+                  />
+                )}
+
+                {/* Effervescent bubbles */}
+                {percentage > 10 && (
+                  <g fill="#FFFFFF" fillOpacity="0.45">
+                    <circle cx="90" cy={liquidTopY + 30} r="3" />
+                    <circle cx="160" cy={liquidTopY + 50} r="4" />
+                    <circle cx="130" cy={liquidTopY + 80} r="2.5" />
+                    <circle cx="200" cy={liquidTopY + 40} r="3.5" />
+                  </g>
+                )}
+
+                {/* Floating Yuzu Citrus bobbing on liquid surface */}
+                {percentage > 5 && (
+                  <g
+                    transform={`translate(115, ${Math.min(210, Math.max(65, liquidTopY - 10))})`}
+                    className="transition-all duration-500"
+                  >
+                    <circle cx="0" cy="0" r="11" fill="#F59E0B" />
+                    <circle cx="-3" cy="-3" r="3" fill="#FBBF24" />
+                    <path d="M 0 -11 Q 4 -16 8 -13 Q 5 -10 0 -11" fill="#22C55E" />
+                    <circle cx="0" cy="-11" r="1.5" fill="#15803D" />
+                  </g>
+                )}
               </g>
-            )}
 
-            {/* Floating Yuzu Citrus bobbing on liquid surface */}
-            {percentage > 5 && (
-              <g
-                transform={`translate(115, ${Math.min(210, Math.max(65, liquidTopY - 10))})`}
-                className="transition-all duration-500"
-              >
-                {/* Floating Yuzu Body */}
-                <circle cx="0" cy="0" r="11" fill="#F59E0B" />
-                <circle cx="-3" cy="-3" r="3" fill="#FBBF24" />
-                {/* Little green stem & leaf */}
-                <path d="M 0 -11 Q 4 -16 8 -13 Q 5 -10 0 -11" fill="#22C55E" />
-                <circle cx="0" cy="-11" r="1.5" fill="#15803D" />
-              </g>
-            )}
-          </g>
+              {/* Outer Glass Highlight Contour */}
+              <path
+                d={capySilhouettePath}
+                fill="none"
+                stroke="url(#glassContourGrad)"
+                strokeWidth="4"
+              />
+            </>
+          )}
 
-          {/* Outer Glass Highlight Contour */}
-          <path
-            d={capySilhouettePath}
-            fill="none"
-            stroke="url(#glassContourGrad)"
-            strokeWidth="4"
-          />
-
-          {/* Capybara Facial Features (Chill, Zen Capy) */}
-          {/* Eye: Content, peaceful closed curve */}
+          {/* Capybara Facial Features */}
           <path
             d="M 215 110 Q 222 116 229 110"
             stroke="#27272A"
@@ -244,7 +279,6 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
             strokeLinecap="round"
             fill="none"
           />
-          {/* Nose & Snout */}
           <path
             d="M 248 112 Q 252 116 250 122"
             stroke="#27272A"
@@ -252,7 +286,6 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
             strokeLinecap="round"
             fill="none"
           />
-          {/* Ear highlight */}
           <path
             d="M 184 56 Q 188 64 186 70"
             stroke="#27272A"
@@ -261,9 +294,8 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
             fill="none"
           />
 
-          {/* 3. CAPYBARA WARDROBE ACCESSORIES (Based on activeSkin) */}
+          {/* CAPYBARA WARDROBE ACCESSORIES */}
           {activeSkin === 'onsen' && (
-            // Onsen Towel / Yuzu on Head
             <g transform="translate(178, 40)">
               <rect x="-14" y="-8" width="28" height="10" rx="4" fill="#FFFFFF" stroke="#E4E4E7" strokeWidth="1.5" />
               <line x1="-10" y1="-3" x2="10" y2="-3" stroke="#CBD5E1" strokeWidth="1" />
@@ -273,30 +305,23 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
           )}
 
           {activeSkin === 'farmer' && (
-            // Woven Straw Hat
             <g transform="translate(178, 38)">
-              {/* Hat Brim */}
               <ellipse cx="0" cy="4" rx="28" ry="6" fill="#FDE047" stroke="#CA8A04" strokeWidth="2" />
-              {/* Hat Crown */}
               <path d="M -14 4 Q -16 -16 0 -16 Q 16 -16 14 4 Z" fill="#FACC15" stroke="#CA8A04" strokeWidth="2" />
-              {/* Red Ribbon */}
               <path d="M -13 0 Q 0 -4 13 0" stroke="#EF4444" strokeWidth="3" fill="none" />
             </g>
           )}
 
           {activeSkin === 'resort' && (
-            // Cool Retro Sunglasses
             <g transform="translate(220, 108)">
               <rect x="-12" y="-6" width="14" height="12" rx="3" fill="#18181B" stroke="#000000" strokeWidth="1.5" />
               <line x1="2" y1="-1" x2="8" y2="-1" stroke="#18181B" strokeWidth="2.5" />
               <line x1="-12" y1="-1" x2="-22" y2="-6" stroke="#18181B" strokeWidth="2.5" strokeLinecap="round" />
-              {/* Lens shine */}
               <line x1="-9" y1="-3" x2="-5" y2="3" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" />
             </g>
           )}
 
           {activeSkin === 'duckie' && (
-            // Cute Yellow Rubber Duckie on Head
             <g transform="translate(178, 34)">
               <ellipse cx="0" cy="0" rx="9" ry="7" fill="#FACC15" />
               <circle cx="6" cy="-4" r="5" fill="#FDE047" />
@@ -307,7 +332,20 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
         </svg>
       </div>
 
-      {/* 3. Minimalist Beverage Distribution Dots (Waterllama Style) */}
+      {/* 3. "Celebrate Your Day" Pill Button (Photo 2 Screen 19 Style) */}
+      {percentage >= 100 && onOpenCelebration && (
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.05 }}
+          onClick={onOpenCelebration}
+          className="mb-2 px-4 py-2 rounded-full bg-stone-900 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-stone-900/10 hover:bg-stone-800 transition-colors"
+        >
+          <PartyPopper className="w-4 h-4 text-amber-400" />
+          <span>CELEBRATE YOUR DAY</span>
+        </motion.button>
+      )}
+
+      {/* 4. Minimalist Beverage Distribution Dots */}
       {breakdown.length > 0 && (
         <div className="flex flex-wrap items-center justify-center gap-3 mt-1 px-4">
           {breakdown.map((item) => (
@@ -323,7 +361,7 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
         </div>
       )}
 
-      {/* 4. Collapsible History Dropdown */}
+      {/* 5. Collapsible History Dropdown */}
       <div className="w-full max-w-sm mt-3 px-2">
         <button
           onClick={() => setShowHistory(!showHistory)}

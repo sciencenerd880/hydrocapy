@@ -6,6 +6,8 @@ import { PoolFloatCanvas } from '../components/PoolFloatCanvas';
 import { WaterllamaMascot } from '../components/WaterllamaMascot';
 import { QuickLogBar } from '../components/QuickLogBar';
 import { WardrobeModal } from '../components/WardrobeModal';
+import { CelebrationConfetti } from '../components/CelebrationConfetti';
+import { CelebrationCardModal } from '../components/CelebrationCardModal';
 import { BeverageType } from '../types';
 import { 
   Waves, 
@@ -35,6 +37,7 @@ export default function HydroCapyApp() {
   const [activeTab, setActiveTab] = useState<'mascot' | 'pool'>('mascot');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
+  const [isCelebrationOpen, setIsCelebrationOpen] = useState(false);
 
   const handleLogDrink = (type: BeverageType, amountMl?: number) => {
     addDrink(type, amountMl);
@@ -52,7 +55,10 @@ export default function HydroCapyApp() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FAF8F5] pb-36 flex flex-col justify-between">
+    <main className="min-h-screen bg-[#FAF8F5] pb-36 flex flex-col justify-between relative overflow-x-hidden">
+      {/* Celebratory Falling Confetti when 100% Goal Reached (Photo 2 Screen 19 Style) */}
+      <CelebrationConfetti isActive={percentage >= 100} />
+
       {/* 1. Minimalist Top Bar (Waterllama Style) */}
       <header className="sticky top-0 z-40 bg-[#FAF8F5]/90 backdrop-blur-xl px-5 py-3.5 border-b border-stone-200/40">
         <div className="max-w-md mx-auto flex items-center justify-between">
@@ -162,15 +168,18 @@ export default function HydroCapyApp() {
       <div className="max-w-md mx-auto px-4 w-full flex-1 flex flex-col justify-center">
         {/* Milestone Celebration Banner */}
         {percentage >= 100 && (
-          <div className="mb-2 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-amber-950 py-2.5 px-4 rounded-2xl shadow-sm flex items-center justify-between">
+          <button
+            onClick={() => setIsCelebrationOpen(true)}
+            className="mb-2 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-amber-950 py-2.5 px-4 rounded-2xl shadow-sm flex items-center justify-between hover:brightness-105 transition-all text-left w-full"
+          >
             <div className="flex items-center gap-2">
               <span className="text-xl">🏆</span>
               <div className="font-black text-xs">
-                Goal Reached! Yuzu Crown Unlocked
+                Goal Reached! Tap to Share Celebration Card
               </div>
             </div>
             <Sparkles className="w-4 h-4 text-amber-900 animate-bounce" />
-          </div>
+          </button>
         )}
 
         {/* Tab 1: Waterllama Style Mascot Liquid Fill */}
@@ -183,6 +192,7 @@ export default function HydroCapyApp() {
             onRemoveLog={removeLog}
             breakdown={breakdown}
             activeSkin={activeSkin}
+            onOpenCelebration={() => setIsCelebrationOpen(true)}
           />
         )}
 
@@ -211,6 +221,15 @@ export default function HydroCapyApp() {
         onClose={() => setIsWardrobeOpen(false)}
         activeSkin={activeSkin}
         onSelectSkin={setActiveSkin}
+        streakDays={streakDays}
+      />
+
+      {/* 5. Celebration Card Modal (Photo 2 Screen 18 Style) */}
+      <CelebrationCardModal
+        isOpen={isCelebrationOpen}
+        onClose={() => setIsCelebrationOpen(false)}
+        currentMl={currentMl}
+        percentage={percentage}
         streakDays={streakDays}
       />
     </main>

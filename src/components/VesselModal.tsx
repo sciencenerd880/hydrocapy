@@ -212,6 +212,34 @@ export const VesselModal: React.FC<VesselModalProps> = ({
               <g clipPath="url(#vesselClip)">
                 <rect x="0" y="0" width="160" height="200" fill="url(#vesselGlassShine)" />
               </g>
+
+              {/* Tea Bag String & Tag (Photo 1 Screen 7 style) */}
+              {beverageType === 'green_tea' && selectedVessel === 'mug' && (
+                <g>
+                  {/* String draping over rim */}
+                  <path
+                    d="M 68 40 Q 64 68 52 80"
+                    fill="none"
+                    stroke="#CBD5E1"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                  {/* Tea Bag Tag */}
+                  <rect
+                    x="40"
+                    y="78"
+                    width="22"
+                    height="24"
+                    rx="5"
+                    fill="#FFFFFF"
+                    stroke="#E2E8F0"
+                    strokeWidth="1.5"
+                    className="drop-shadow-xs"
+                  />
+                  <circle cx="51" cy="90" r="4.5" fill="#84CC16" />
+                  <path d="M 51 86 Q 53 84 55 86" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                </g>
+              )}
             </svg>
           </div>
 
