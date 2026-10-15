@@ -1,7 +1,42 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BeverageConfig, BeverageType, DrinkLog, CapySkin, SkinConfig } from '../types';
+import { 
+  BeverageConfig, 
+  BeverageType, 
+  DrinkLog, 
+  CapySkin, 
+  SkinConfig, 
+  MascotId, 
+  MascotConfig 
+} from '../types';
+
+export const MASCOTS: Record<MascotId, MascotConfig> = {
+  capybara: {
+    id: 'capybara',
+    name: 'Chill Capy',
+    species: 'Capybara',
+    tagline: 'Zen king of warm onsen hot springs',
+    emoji: '🦫',
+    badge: 'HERO',
+  },
+  otter: {
+    id: 'otter',
+    name: 'Floaty Otter',
+    species: 'Sea Otter',
+    tagline: 'Drifting on cool river ripples',
+    emoji: '🦦',
+    badge: 'CHILL',
+  },
+  duckie: {
+    id: 'duckie',
+    name: 'Bath Duckie',
+    species: 'Rubber Duck',
+    tagline: 'Faithful yellow bathwater buddy',
+    emoji: '🐥',
+    badge: 'COZY',
+  },
+};
 
 export const BEVERAGES: Record<BeverageType, BeverageConfig> = {
   water: {
@@ -102,6 +137,8 @@ export function useHydration() {
   const [logs, setLogs] = useState<DrinkLog[]>([]);
   const [streakDays, setStreakDays] = useState<number>(5);
   const [activeSkin, setActiveSkin] = useState<CapySkin>('onsen');
+  const [activeMascot, setActiveMascot] = useState<MascotId>('capybara');
+  const [isOnboarded, setIsOnboarded] = useState<boolean>(true);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   // Load from localStorage on client
@@ -111,9 +148,18 @@ export function useHydration() {
       const savedLogs = localStorage.getItem('hydrocapy_logs');
       const savedStreak = localStorage.getItem('hydrocapy_streak');
       const savedSkin = localStorage.getItem('hydrocapy_skin') as CapySkin | null;
+      const savedMascot = localStorage.getItem('hydrocapy_mascot') as MascotId | null;
+      const savedOnboarded = localStorage.getItem('hydrocapy_onboarded');
 
       if (savedGoal) setGoalMl(Number(savedGoal));
       if (savedSkin && CAPY_SKINS[savedSkin]) setActiveSkin(savedSkin);
+      if (savedMascot && MASCOTS[savedMascot]) setActiveMascot(savedMascot);
+      if (savedOnboarded !== null) {
+        setIsOnboarded(savedOnboarded === 'true');
+      } else {
+        // First-time visitor: trigger onboarding
+        setIsOnboarded(false);
+      }
       if (savedLogs) {
         setLogs(JSON.parse(savedLogs));
       } else {
@@ -142,10 +188,32 @@ export function useHydration() {
       localStorage.setItem('hydrocapy_logs', JSON.stringify(logs));
       localStorage.setItem('hydrocapy_streak', streakDays.toString());
       localStorage.setItem('hydrocapy_skin', activeSkin);
+      localStorage.setItem('hydrocapy_mascot', activeMascot);
+      localStorage.setItem('hydrocapy_onboarded', isOnboarded.toString());
     } catch (e) {
       console.warn('Storage save error', e);
     }
-  }, [goalMl, logs, streakDays, activeSkin, isLoaded]);
+  }, [goalMl, logs, streakDays, activeSkin, activeMascot, isOnboarded, isLoaded]);
+
+  const completeOnboarding = (mascot?: MascotId, goal?: number) => {
+    if (mascot) setActiveMascot(mascot);
+    if (goal) setGoalMl(goal);
+    setIsOnboarded(true);
+    try {
+      localStorage.setItem('hydrocapy_onboarded', 'true');
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const resetOnboarding = () => {
+    setIsOnboarded(false);
+    try {
+      localStorage.setItem('hydrocapy_onboarded', 'false');
+    } catch (e) {
+      // ignore
+    }
+  };
 
   const addDrink = (type: BeverageType, amountMl?: number) => {
     const config = BEVERAGES[type];
@@ -205,6 +273,11 @@ export function useHydration() {
     streakDays,
     activeSkin,
     setActiveSkin,
+    activeMascot,
+    setActiveMascot,
+    isOnboarded,
+    completeOnboarding,
+    resetOnboarding,
     pacingDeltaMl,
     expectedPacingMl,
   };

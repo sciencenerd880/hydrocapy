@@ -42,3 +42,14 @@ export interface SkinConfig {
   unlocked: boolean;
 }
 
+export type MascotId = 'capybara' | 'otter' | 'duckie';
+
+export interface MascotConfig {
+  id: MascotId;
+  name: string;
+  species: string;
+  tagline: string;
+  emoji: string;
+  badge: string;
+}
+

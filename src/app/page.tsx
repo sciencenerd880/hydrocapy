@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useHydration } from '../store/hydrationStore';
+import React, { useState, useEffect } from 'react';
+import { useHydration, MASCOTS } from '../store/hydrationStore';
 import { PoolFloatCanvas } from '../components/PoolFloatCanvas';
 import { WaterllamaMascot } from '../components/WaterllamaMascot';
 import { QuickLogBar } from '../components/QuickLogBar';
 import { WardrobeModal } from '../components/WardrobeModal';
+import { CalendarModal } from '../components/CalendarModal';
+import { OnboardingModal } from '../components/OnboardingModal';
 import { CelebrationConfetti } from '../components/CelebrationConfetti';
 import { CelebrationCardModal } from '../components/CelebrationCardModal';
 import { BeverageType } from '../types';
@@ -14,7 +16,10 @@ import {
   Sparkles, 
   RotateCcw, 
   Settings2,
-  Flame
+  Flame,
+  Calendar as CalendarIcon,
+  Sparkle,
+  Compass
 } from 'lucide-react';
 
 export default function HydroCapyApp() {
@@ -32,16 +37,32 @@ export default function HydroCapyApp() {
     streakDays,
     activeSkin,
     setActiveSkin,
+    activeMascot,
+    setActiveMascot,
+    isOnboarded,
+    completeOnboarding,
+    resetOnboarding,
   } = useHydration();
 
   const [activeTab, setActiveTab] = useState<'mascot' | 'pool'>('mascot');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isCelebrationOpen, setIsCelebrationOpen] = useState(false);
+
+  // Auto-open onboarding modal on first load if not onboarded yet
+  useEffect(() => {
+    if (isLoaded && !isOnboarded) {
+      setIsOnboardingOpen(true);
+    }
+  }, [isLoaded, isOnboarded]);
 
   const handleLogDrink = (type: BeverageType, amountMl?: number) => {
     addDrink(type, amountMl);
   };
+
+  const currentMascot = MASCOTS[activeMascot] || MASCOTS.capybara;
 
   if (!isLoaded) {
     return (
@@ -56,18 +77,30 @@ export default function HydroCapyApp() {
 
   return (
     <main className="min-h-screen bg-[#FAF8F5] pb-36 flex flex-col justify-between relative overflow-x-hidden">
-      {/* Celebratory Falling Confetti when 100% Goal Reached (Photo 2 Screen 19 Style) */}
+      {/* Celebratory Falling Confetti when 100% Goal Reached (Waterllama Milestone Style) */}
       <CelebrationConfetti isActive={percentage >= 100} />
 
       {/* 1. Minimalist Top Bar (Waterllama Style) */}
       <header className="sticky top-0 z-40 bg-[#FAF8F5]/90 backdrop-blur-xl px-5 py-3.5 border-b border-stone-200/40">
         <div className="max-w-md mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🦫</span>
-            <h1 className="text-lg font-black text-stone-900 tracking-tight">
-              HydroCapy
-            </h1>
-          </div>
+          {/* Active Mascot badge & App Title */}
+          <button
+            onClick={() => setIsWardrobeOpen(true)}
+            className="flex items-center gap-2 group text-left transition-transform active:scale-95"
+            title="Switch Companion / Costumes"
+          >
+            <span className="text-2xl group-hover:scale-110 transition-transform">
+              {currentMascot.emoji}
+            </span>
+            <div className="flex flex-col">
+              <h1 className="text-base font-black text-stone-900 tracking-tight leading-tight">
+                {currentMascot.name}
+              </h1>
+              <span className="text-[10px] font-bold text-stone-600 uppercase tracking-wider">
+                Companion
+              </span>
+            </div>
+          </button>
 
           {/* Clean Mode Switcher: Mascot vs Pool */}
           <div className="flex items-center bg-stone-200/60 p-1 rounded-full text-xs font-bold text-stone-600">
@@ -94,15 +127,22 @@ export default function HydroCapyApp() {
             </button>
           </div>
 
-          {/* Quick Streak & Settings */}
+          {/* Top Actions: Streak Flame (opens Calendar), Calendar & Settings */}
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => setIsWardrobeOpen(true)}
+              onClick={() => setIsCalendarOpen(true)}
               className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-100/80 hover:bg-orange-200 text-orange-800 text-xs font-black transition-colors"
-              title="7-Day Streak & Wardrobe"
+              title="Daily Streak & Monthly Calendar"
             >
               <Flame className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
               <span>{streakDays}</span>
+            </button>
+            <button
+              onClick={() => setIsCalendarOpen(true)}
+              className="p-1.5 rounded-full text-stone-500 hover:text-stone-900 transition-colors"
+              title="Calendar View"
+            >
+              <CalendarIcon className="w-4 h-4" />
             </button>
             <button
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
@@ -120,10 +160,10 @@ export default function HydroCapyApp() {
         <div className="max-w-md mx-auto px-4 w-full mb-2">
           <div className="bg-white rounded-3xl p-5 border border-stone-200/80 shadow-lg space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-extrabold text-stone-900 text-sm">Target Goal</h3>
+              <h3 className="font-extrabold text-stone-900 text-sm">Quick Settings</h3>
               <button
                 onClick={() => setIsSettingsOpen(false)}
-                className="text-xs font-bold text-stone-900"
+                className="text-xs font-bold text-stone-900 hover:text-stone-600"
               >
                 Close
               </button>
@@ -145,8 +185,43 @@ export default function HydroCapyApp() {
               />
             </div>
 
+            {/* Quick Actions in Settings */}
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-stone-100">
+              <button
+                onClick={() => {
+                  setIsSettingsOpen(false);
+                  setIsWardrobeOpen(true);
+                }}
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-black transition-colors"
+              >
+                <span>{currentMascot.emoji}</span>
+                <span>3 Companions</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsSettingsOpen(false);
+                  setIsCalendarOpen(true);
+                }}
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-900 text-xs font-black transition-colors"
+              >
+                <CalendarIcon className="w-3.5 h-3.5 text-orange-600" />
+                <span>Streak Sheet</span>
+              </button>
+            </div>
+
             <div className="flex items-center justify-between pt-2 border-t border-stone-100">
-              <span className="text-xs text-stone-400">Reset Today</span>
+              <button
+                onClick={() => {
+                  setIsSettingsOpen(false);
+                  resetOnboarding();
+                  setIsOnboardingOpen(true);
+                }}
+                className="flex items-center gap-1 text-xs font-bold text-stone-500 hover:text-stone-900"
+              >
+                <Compass className="w-3.5 h-3.5 text-amber-600" />
+                Replay Onboarding Tour
+              </button>
+
               <button
                 onClick={() => {
                   if (confirm('Reset today back to 0?')) {
@@ -157,7 +232,7 @@ export default function HydroCapyApp() {
                 className="flex items-center gap-1 text-xs font-bold text-red-500 hover:text-red-700 p-1 rounded-lg"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                Reset
+                Reset Today
               </button>
             </div>
           </div>
@@ -192,6 +267,7 @@ export default function HydroCapyApp() {
             onRemoveLog={removeLog}
             breakdown={breakdown}
             activeSkin={activeSkin}
+            activeMascot={activeMascot}
             onOpenCelebration={() => setIsCelebrationOpen(true)}
           />
         )}
@@ -213,18 +289,41 @@ export default function HydroCapyApp() {
         onOpenWardrobe={() => setIsWardrobeOpen(true)}
         streakDays={streakDays}
         activeSkin={activeSkin}
+        activeMascot={activeMascot}
       />
 
-      {/* 4. Capybara Wardrobe & 7-Day Challenge Modal */}
+      {/* 4. Mascot Companions & Capybara Wardrobe Modal */}
       <WardrobeModal
         isOpen={isWardrobeOpen}
         onClose={() => setIsWardrobeOpen(false)}
         activeSkin={activeSkin}
         onSelectSkin={setActiveSkin}
+        activeMascot={activeMascot}
+        onSelectMascot={setActiveMascot}
         streakDays={streakDays}
       />
 
-      {/* 5. Celebration Card Modal (Photo 2 Screen 18 Style) */}
+      {/* 5. Calendar & Streak Modal (Waterllama Mobbin Screens 4 & 5 Style) */}
+      <CalendarModal
+        isOpen={isCalendarOpen}
+        onClose={() => setIsCalendarOpen(false)}
+        streakDays={streakDays}
+        currentMl={currentMl}
+        goalMl={goalMl}
+        percentage={percentage}
+      />
+
+      {/* 6. Onboarding Tour Modal (Waterllama 3-Step Setup) */}
+      <OnboardingModal
+        isOpen={isOnboardingOpen}
+        onComplete={(mascot, goal) => {
+          completeOnboarding(mascot, goal);
+          setIsOnboardingOpen(false);
+        }}
+        onLogFirstDrink={() => handleLogDrink('water', 250)}
+      />
+
+      {/* 7. Celebration Card Modal (Waterllama Share Card Style) */}
       <CelebrationCardModal
         isOpen={isCelebrationOpen}
         onClose={() => setIsCelebrationOpen(false)}

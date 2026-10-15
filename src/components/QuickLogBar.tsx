@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BEVERAGES } from '../store/hydrationStore';
-import { BeverageType, CapySkin } from '../types';
+import { BeverageType, CapySkin, MascotId } from '../types';
+import { MASCOTS } from '../store/hydrationStore';
 import { 
   WaterIcon, 
   TeaIcon, 
@@ -19,6 +20,7 @@ interface QuickLogBarProps {
   onOpenWardrobe: () => void;
   streakDays: number;
   activeSkin: CapySkin;
+  activeMascot?: MascotId;
 }
 
 interface FlyingDroplet {
@@ -33,6 +35,7 @@ export const QuickLogBar: React.FC<QuickLogBarProps> = ({
   onOpenWardrobe,
   streakDays,
   activeSkin,
+  activeMascot = 'capybara',
 }) => {
   const [selectedDrinkForVessel, setSelectedDrinkForVessel] = useState<BeverageType | null>(null);
   const [flyingDroplets, setFlyingDroplets] = useState<FlyingDroplet[]>([]);
@@ -76,7 +79,7 @@ export const QuickLogBar: React.FC<QuickLogBarProps> = ({
     { type: 'electrolyte', Icon: ElectrolyteIcon, label: 'Hydrate', amount: 350 },
   ];
 
-  const skinEmoji = activeSkin === 'resort' ? '🕶️' : activeSkin === 'farmer' ? '🌾' : activeSkin === 'duckie' ? '🐥' : '♨️';
+  const avatarEmoji = MASCOTS[activeMascot]?.emoji || '🦫';
 
   return (
     <>
@@ -148,7 +151,7 @@ export const QuickLogBar: React.FC<QuickLogBarProps> = ({
             className="w-10 h-10 rounded-full bg-amber-100/90 border border-amber-300 flex items-center justify-center text-lg flex-shrink-0 shadow-xs hover:bg-amber-200 transition-colors mr-0.5"
             title="Capy Wardrobe & Skins"
           >
-            <span>{skinEmoji}</span>
+            <span>{avatarEmoji}</span>
           </motion.button>
 
           {/* Beverage Vessel Buttons */}

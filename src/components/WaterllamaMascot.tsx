@@ -2,8 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BEVERAGES } from '../store/hydrationStore';
-import { BeverageType, DrinkLog, CapySkin } from '../types';
+import { BEVERAGES, MASCOTS } from '../store/hydrationStore';
+import { BeverageType, DrinkLog, CapySkin, MascotId } from '../types';
 import { soundFx } from '../utils/soundEffects';
 import { Sparkles, Trash2, ChevronDown, PartyPopper } from 'lucide-react';
 
@@ -20,6 +20,7 @@ interface WaterllamaMascotProps {
     config: (typeof BEVERAGES)[BeverageType];
   }[];
   activeSkin?: CapySkin;
+  activeMascot?: MascotId;
   onOpenCelebration?: () => void;
 }
 
@@ -31,6 +32,7 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
   onRemoveLog,
   breakdown,
   activeSkin = 'onsen',
+  activeMascot = 'capybara',
   onOpenCelebration,
 }) => {
   const [showHistory, setShowHistory] = useState(false);
@@ -47,13 +49,13 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
     prevPercentageRef.current = percentage;
   }, [percentage]);
 
-  // Dimensions for Capybara (viewBox 0 0 280 260)
+  // Dimensions (viewBox 0 0 280 260)
   const totalFillableHeight = 190;
   const clampedPct = Math.min(100, Math.max(0, percentage));
   const fillHeight = (clampedPct / 100) * totalFillableHeight;
   const liquidTopY = 230 - fillHeight;
 
-  // Ultra-smooth, adorable Capybara silhouette vector path
+  // 1. Capybara Silhouette (Sitting in Onsen)
   const capySilhouettePath = `
     M 50 230
     C 32 225, 22 185, 28 145
@@ -68,6 +70,44 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
     C 218 228, 212 230, 198 230
     Z
   `;
+
+  // 2. Floaty River Otter Silhouette (Floating playfully on back)
+  const otterSilhouettePath = `
+    M 60 215
+    C 40 210, 32 180, 42 145
+    C 52 115, 75 96, 105 86
+    C 125 80, 142 68, 158 56
+    C 166 48, 178 47, 184 55
+    C 190 48, 200 51, 204 61
+    C 212 73, 228 85, 240 103
+    C 248 119, 245 139, 232 158
+    C 218 175, 195 189, 172 199
+    C 142 211, 102 218, 60 215
+    Z
+  `;
+
+  // 3. Bath Duckie Silhouette (Cute rounded rubber duck)
+  const duckieSilhouettePath = `
+    M 50 200
+    C 35 190, 30 160, 45 135
+    C 55 120, 75 115, 100 120
+    C 110 100, 125 70, 145 55
+    C 160 45, 180 45, 195 55
+    C 210 65, 218 80, 215 98
+    C 230 95, 255 100, 258 108
+    C 255 118, 232 120, 212 120
+    C 218 135, 225 160, 220 185
+    C 212 205, 185 215, 140 215
+    C 95 215, 65 210, 50 200
+    Z
+  `;
+
+  const activeSilhouettePath = 
+    activeMascot === 'otter' 
+      ? otterSilhouettePath 
+      : activeMascot === 'duckie' 
+      ? duckieSilhouettePath 
+      : capySilhouettePath;
 
   // Stacked multi-beverage liquid layers
   let currentLayerBaseY = 230;
@@ -88,7 +128,7 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
 
   return (
     <div className="w-full flex flex-col items-center select-none">
-      {/* 1. Dynamic Waterllama Header (Screen 19 "Fresh [Day]!" when goal reached) */}
+      {/* 1. Dynamic Waterllama Header */}
       {percentage >= 100 ? (
         <div className="text-center my-2">
           <h2 className="text-3xl font-black text-sky-500 tracking-tight mb-1">
@@ -124,7 +164,7 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
         className="relative w-80 h-76 sm:w-92 sm:h-84 my-1 flex items-center justify-center cursor-pointer group"
         title="Tap to toggle illustrated character mode"
       >
-        {/* Animated Steam Wisps when hydration is warm & high (>= 75%) */}
+        {/* Animated Steam Wisps when hydration is high (>= 75%) */}
         {percentage >= 75 && (
           <div className="absolute top-2 inset-x-0 flex justify-center gap-8 pointer-events-none opacity-60">
             <motion.div
@@ -151,8 +191,8 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
-            <clipPath id="capyHeroMask">
-              <path d={capySilhouettePath} />
+            <clipPath id="mascotHeroMask">
+              <path d={activeSilhouettePath} />
             </clipPath>
 
             <linearGradient id="glassContourGrad" x1="0" y1="0" x2="1" y2="1">
@@ -165,39 +205,64 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
               <stop offset="100%" stopColor="#0284C7" />
             </linearGradient>
 
-            {/* Illustrated Warm Capybara Fur Gradient (Screen 20 Style) */}
+            {/* Mascot Fur Gradients */}
             <linearGradient id="capyFurGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#B48259" />
               <stop offset="100%" stopColor="#8C5C38" />
+            </linearGradient>
+
+            <linearGradient id="otterFurGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#9A7B56" />
+              <stop offset="100%" stopColor="#6E5033" />
+            </linearGradient>
+
+            <linearGradient id="duckieBodyGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#FDE047" />
+              <stop offset="100%" stopColor="#EAB308" />
             </linearGradient>
           </defs>
 
           {/* Mode 1: Full Illustrated Character (Screen 20 in Photo 2) */}
           {isIllustrated ? (
-            <g clipPath="url(#capyHeroMask)">
-              {/* Warm Fur Base */}
-              <rect x="0" y="0" width="280" height="260" fill="url(#capyFurGrad)" />
-              {/* Lighter Snout Patch */}
-              <ellipse cx="230" cy="115" rx="35" ry="25" fill="#D2A679" />
-              {/* Belly Soft Shadow */}
-              <ellipse cx="120" cy="210" rx="75" ry="35" fill="#754826" opacity="0.4" />
-              {/* Cute Blushing Rosy Cheek */}
-              <ellipse cx="205" cy="122" rx="9" ry="6" fill="#F87171" opacity="0.45" />
+            <g clipPath="url(#mascotHeroMask)">
+              {activeMascot === 'capybara' && (
+                <>
+                  <rect x="0" y="0" width="280" height="260" fill="url(#capyFurGrad)" />
+                  <ellipse cx="230" cy="115" rx="35" ry="25" fill="#D2A679" />
+                  <ellipse cx="120" cy="210" rx="75" ry="35" fill="#754826" opacity="0.4" />
+                  <ellipse cx="205" cy="122" rx="9" ry="6" fill="#F87171" opacity="0.45" />
+                </>
+              )}
+              {activeMascot === 'otter' && (
+                <>
+                  <rect x="0" y="0" width="280" height="260" fill="url(#otterFurGrad)" />
+                  <ellipse cx="215" cy="105" rx="30" ry="22" fill="#E8D5C4" />
+                  <ellipse cx="110" cy="195" rx="60" ry="30" fill="#E8D5C4" opacity="0.5" />
+                  <ellipse cx="195" cy="110" rx="8" ry="5" fill="#F87171" opacity="0.4" />
+                </>
+              )}
+              {activeMascot === 'duckie' && (
+                <>
+                  <rect x="0" y="0" width="280" height="260" fill="url(#duckieBodyGrad)" />
+                  <ellipse cx="180" cy="170" rx="35" ry="20" fill="#CA8A04" opacity="0.3" />
+                  <ellipse cx="170" cy="95" rx="8" ry="5" fill="#F87171" opacity="0.4" />
+                </>
+              )}
             </g>
           ) : (
-            // Mode 2: Signature Stratified Liquid Fill
+            // Mode 2: Stratified Liquid Fill
             <>
-              {/* Background Empty Silhouette Container */}
+              {/* Background Silhouette */}
               <path
-                d={capySilhouettePath}
+                d={activeSilhouettePath}
                 fill="#F4F4F5"
                 stroke="#E4E4E7"
                 strokeWidth="3.5"
                 strokeLinejoin="round"
               />
 
-              {/* Liquid Contents Masked to Capybara Shape */}
-              <g clipPath="url(#capyHeroMask)">
+              {/* Liquid Contents Masked to Mascot Shape */}
+              <g clipPath="url(#mascotHeroMask)">
                 {layers.length === 0 && percentage > 0 && (
                   <rect
                     x="0"
@@ -209,7 +274,7 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
                   />
                 )}
 
-                {/* Multi-Beverage Stratified Layers */}
+                {/* Multi-Beverage Layers */}
                 {layers.map((layer, idx) => (
                   <rect
                     key={`${layer.type}-${idx}`}
@@ -237,7 +302,7 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
                   />
                 )}
 
-                {/* Effervescent bubbles */}
+                {/* Internal effervescent bubbles */}
                 {percentage > 10 && (
                   <g fill="#FFFFFF" fillOpacity="0.45">
                     <circle cx="90" cy={liquidTopY + 30} r="3" />
@@ -263,7 +328,7 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
 
               {/* Outer Glass Highlight Contour */}
               <path
-                d={capySilhouettePath}
+                d={activeSilhouettePath}
                 fill="none"
                 stroke="url(#glassContourGrad)"
                 strokeWidth="4"
@@ -271,31 +336,67 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
             </>
           )}
 
-          {/* Capybara Facial Features */}
-          <path
-            d="M 215 110 Q 222 116 229 110"
-            stroke="#27272A"
-            strokeWidth="3.2"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <path
-            d="M 248 112 Q 252 116 250 122"
-            stroke="#27272A"
-            strokeWidth="3"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <path
-            d="M 184 56 Q 188 64 186 70"
-            stroke="#27272A"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            fill="none"
-          />
+          {/* Mascot Specific Facial Details */}
+          {activeMascot === 'capybara' && (
+            <>
+              <path
+                d="M 215 110 Q 222 116 229 110"
+                stroke="#27272A"
+                strokeWidth="3.2"
+                strokeLinecap="round"
+                fill="none"
+              />
+              <path
+                d="M 248 112 Q 252 116 250 122"
+                stroke="#27272A"
+                strokeWidth="3"
+                strokeLinecap="round"
+                fill="none"
+              />
+              <path
+                d="M 184 56 Q 188 64 186 70"
+                stroke="#27272A"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                fill="none"
+              />
+            </>
+          )}
 
-          {/* CAPYBARA WARDROBE ACCESSORIES */}
-          {activeSkin === 'onsen' && (
+          {activeMascot === 'otter' && (
+            <>
+              {/* Otter cute closed eye */}
+              <path
+                d="M 205 92 Q 212 98 219 92"
+                stroke="#27272A"
+                strokeWidth="3"
+                strokeLinecap="round"
+                fill="none"
+              />
+              {/* Cute nose */}
+              <ellipse cx="236" cy="104" rx="4.5" ry="3.5" fill="#27272A" />
+              {/* Whiskers */}
+              <line x1="222" y1="108" x2="208" y2="114" stroke="#27272A" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1="222" y1="104" x2="206" y2="105" stroke="#27272A" strokeWidth="1.5" strokeLinecap="round" />
+            </>
+          )}
+
+          {activeMascot === 'duckie' && (
+            <>
+              {/* Duckie round eye */}
+              <ellipse cx="188" cy="85" rx="3.5" ry="4.5" fill="#18181B" />
+              {/* Duck bill */}
+              <path
+                d="M 215 98 Q 258 96 254 110 Q 230 116 212 116 Z"
+                fill="#EA580C"
+                stroke="#C2410C"
+                strokeWidth="1.5"
+              />
+            </>
+          )}
+
+          {/* Costumes & Accessories */}
+          {activeSkin === 'onsen' && activeMascot === 'capybara' && (
             <g transform="translate(178, 40)">
               <rect x="-14" y="-8" width="28" height="10" rx="4" fill="#FFFFFF" stroke="#E4E4E7" strokeWidth="1.5" />
               <line x1="-10" y1="-3" x2="10" y2="-3" stroke="#CBD5E1" strokeWidth="1" />
@@ -321,7 +422,7 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
             </g>
           )}
 
-          {activeSkin === 'duckie' && (
+          {activeSkin === 'duckie' && activeMascot !== 'duckie' && (
             <g transform="translate(178, 34)">
               <ellipse cx="0" cy="0" rx="9" ry="7" fill="#FACC15" />
               <circle cx="6" cy="-4" r="5" fill="#FDE047" />
@@ -332,7 +433,7 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
         </svg>
       </div>
 
-      {/* 3. "Celebrate Your Day" Pill Button (Photo 2 Screen 19 Style) */}
+      {/* 3. "Celebrate Your Day" Pill Button */}
       {percentage >= 100 && onOpenCelebration && (
         <motion.button
           whileTap={{ scale: 0.95 }}
