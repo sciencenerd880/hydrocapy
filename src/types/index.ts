@@ -30,3 +30,15 @@ export interface DayProgress {
   logs: DrinkLog[];
   streakDays: number;
 }
+
+export type CapySkin = 'onsen' | 'farmer' | 'resort' | 'duckie';
+
+export interface SkinConfig {
+  id: CapySkin;
+  name: string;
+  subtitle: string;
+  emoji: string;
+  badge: string;
+  unlocked: boolean;
+}
+

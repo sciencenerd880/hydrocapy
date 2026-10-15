@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BeverageConfig, BeverageType, DrinkLog } from '../types';
+import { BeverageConfig, BeverageType, DrinkLog, CapySkin, SkinConfig } from '../types';
 
 export const BEVERAGES: Record<BeverageType, BeverageConfig> = {
   water: {
@@ -60,12 +60,48 @@ export const BEVERAGES: Record<BeverageType, BeverageConfig> = {
   },
 };
 
+export const CAPY_SKINS: Record<CapySkin, SkinConfig> = {
+  onsen: {
+    id: 'onsen',
+    name: 'Onsen Chill Capy',
+    subtitle: 'Classic hot spring relaxation with floating yuzu',
+    emoji: '♨️',
+    badge: 'HERO',
+    unlocked: true,
+  },
+  farmer: {
+    id: 'farmer',
+    name: 'Straw Hat Farmer',
+    subtitle: 'Harvesting fresh morning dew in the fields',
+    emoji: '🌾',
+    badge: 'STREAK',
+    unlocked: true,
+  },
+  resort: {
+    id: 'resort',
+    name: 'Resort Shades Capy',
+    subtitle: 'Chilling poolside with retro shades',
+    emoji: '🕶️',
+    badge: 'CHALLENGE',
+    unlocked: true,
+  },
+  duckie: {
+    id: 'duckie',
+    name: 'Rubber Duckie Buddy',
+    subtitle: 'Floating companionship in warm bubbles',
+    emoji: '🐥',
+    badge: 'MASTER',
+    unlocked: true,
+  },
+};
+
 const DEFAULT_GOAL = 2200; // ml
 
 export function useHydration() {
   const [goalMl, setGoalMl] = useState<number>(DEFAULT_GOAL);
   const [logs, setLogs] = useState<DrinkLog[]>([]);
   const [streakDays, setStreakDays] = useState<number>(5);
+  const [activeSkin, setActiveSkin] = useState<CapySkin>('onsen');
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   // Load from localStorage on client
@@ -74,8 +110,10 @@ export function useHydration() {
       const savedGoal = localStorage.getItem('hydrocapy_goal');
       const savedLogs = localStorage.getItem('hydrocapy_logs');
       const savedStreak = localStorage.getItem('hydrocapy_streak');
+      const savedSkin = localStorage.getItem('hydrocapy_skin') as CapySkin | null;
 
       if (savedGoal) setGoalMl(Number(savedGoal));
+      if (savedSkin && CAPY_SKINS[savedSkin]) setActiveSkin(savedSkin);
       if (savedLogs) {
         setLogs(JSON.parse(savedLogs));
       } else {
@@ -103,10 +141,11 @@ export function useHydration() {
       localStorage.setItem('hydrocapy_goal', goalMl.toString());
       localStorage.setItem('hydrocapy_logs', JSON.stringify(logs));
       localStorage.setItem('hydrocapy_streak', streakDays.toString());
+      localStorage.setItem('hydrocapy_skin', activeSkin);
     } catch (e) {
       console.warn('Storage save error', e);
     }
-  }, [goalMl, logs, streakDays, isLoaded]);
+  }, [goalMl, logs, streakDays, activeSkin, isLoaded]);
 
   const addDrink = (type: BeverageType, amountMl?: number) => {
     const config = BEVERAGES[type];
@@ -164,6 +203,8 @@ export function useHydration() {
     percentage,
     breakdown,
     streakDays,
+    activeSkin,
+    setActiveSkin,
     pacingDeltaMl,
     expectedPacingMl,
   };

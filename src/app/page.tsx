@@ -5,6 +5,7 @@ import { useHydration } from '../store/hydrationStore';
 import { PoolFloatCanvas } from '../components/PoolFloatCanvas';
 import { WaterllamaMascot } from '../components/WaterllamaMascot';
 import { QuickLogBar } from '../components/QuickLogBar';
+import { WardrobeModal } from '../components/WardrobeModal';
 import { BeverageType } from '../types';
 import { 
   Waves, 
@@ -27,10 +28,13 @@ export default function HydroCapyApp() {
     percentage,
     breakdown,
     streakDays,
+    activeSkin,
+    setActiveSkin,
   } = useHydration();
 
   const [activeTab, setActiveTab] = useState<'mascot' | 'pool'>('mascot');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
 
   const handleLogDrink = (type: BeverageType, amountMl?: number) => {
     addDrink(type, amountMl);
@@ -50,7 +54,7 @@ export default function HydroCapyApp() {
   return (
     <main className="min-h-screen bg-[#FAF8F5] pb-36 flex flex-col justify-between">
       {/* 1. Minimalist Top Bar (Waterllama Style) */}
-      <header className="sticky top-0 z-50 bg-[#FAF8F5]/90 backdrop-blur-xl px-5 py-3.5">
+      <header className="sticky top-0 z-40 bg-[#FAF8F5]/90 backdrop-blur-xl px-5 py-3.5 border-b border-stone-200/40">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🦫</span>
@@ -86,10 +90,14 @@ export default function HydroCapyApp() {
 
           {/* Quick Streak & Settings */}
           <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-100/70 text-orange-700 text-xs font-black">
+            <button
+              onClick={() => setIsWardrobeOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-100/80 hover:bg-orange-200 text-orange-800 text-xs font-black transition-colors"
+              title="7-Day Streak & Wardrobe"
+            >
               <Flame className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
               <span>{streakDays}</span>
-            </div>
+            </button>
             <button
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
               className="p-1.5 rounded-full text-stone-400 hover:text-stone-800 transition-colors"
@@ -154,8 +162,8 @@ export default function HydroCapyApp() {
       <div className="max-w-md mx-auto px-4 w-full flex-1 flex flex-col justify-center">
         {/* Milestone Celebration Banner */}
         {percentage >= 100 && (
-          <div className="mb-3 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-amber-950 py-3 px-4 rounded-2xl shadow-sm flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
+          <div className="mb-2 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-amber-950 py-2.5 px-4 rounded-2xl shadow-sm flex items-center justify-between">
+            <div className="flex items-center gap-2">
               <span className="text-xl">🏆</span>
               <div className="font-black text-xs">
                 Goal Reached! Yuzu Crown Unlocked
@@ -174,6 +182,7 @@ export default function HydroCapyApp() {
             logs={logs}
             onRemoveLog={removeLog}
             breakdown={breakdown}
+            activeSkin={activeSkin}
           />
         )}
 
@@ -188,8 +197,22 @@ export default function HydroCapyApp() {
         )}
       </div>
 
-      {/* 3. Bespoke Floating Quick-Log Dock */}
-      <QuickLogBar onLogDrink={handleLogDrink} />
+      {/* 3. Floating Quick-Log Dock & Challenge Pill */}
+      <QuickLogBar
+        onLogDrink={handleLogDrink}
+        onOpenWardrobe={() => setIsWardrobeOpen(true)}
+        streakDays={streakDays}
+        activeSkin={activeSkin}
+      />
+
+      {/* 4. Capybara Wardrobe & 7-Day Challenge Modal */}
+      <WardrobeModal
+        isOpen={isWardrobeOpen}
+        onClose={() => setIsWardrobeOpen(false)}
+        activeSkin={activeSkin}
+        onSelectSkin={setActiveSkin}
+        streakDays={streakDays}
+      />
     </main>
   );
 }
