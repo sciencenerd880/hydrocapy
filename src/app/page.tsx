@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useHydration, MASCOTS } from '../store/hydrationStore';
-import { PoolFloatCanvas } from '../components/PoolFloatCanvas';
+import React, { useState, useEffect, useRef } from 'react';
+import { useHydration, MASCOTS, BEVERAGES } from '../store/hydrationStore';
 import { WaterllamaMascot } from '../components/WaterllamaMascot';
 import { QuickLogBar } from '../components/QuickLogBar';
 import { WardrobeModal } from '../components/WardrobeModal';
@@ -11,15 +10,18 @@ import { OnboardingModal } from '../components/OnboardingModal';
 import { CelebrationConfetti } from '../components/CelebrationConfetti';
 import { CelebrationCardModal } from '../components/CelebrationCardModal';
 import { BeverageType } from '../types';
+import { soundFx } from '../utils/soundEffects';
 import { 
-  Waves, 
   Sparkles, 
   RotateCcw, 
   Settings2,
   Flame,
   Calendar as CalendarIcon,
-  Sparkle,
-  Compass
+  Compass,
+  Trophy,
+  Zap,
+  Droplet,
+  Undo2
 } from 'lucide-react';
 
 export default function HydroCapyApp() {
@@ -44,12 +46,14 @@ export default function HydroCapyApp() {
     resetOnboarding,
   } = useHydration();
 
-  const [activeTab, setActiveTab] = useState<'mascot' | 'pool'>('mascot');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isCelebrationOpen, setIsCelebrationOpen] = useState(false);
+  const [lastLoggedToast, setLastLoggedToast] = useState<{ id: string; label: string; amount: number } | null>(null);
+
+  const prevPctRef = useRef(percentage);
 
   // Auto-open onboarding modal on first load if not onboarded yet
   useEffect(() => {
@@ -58,8 +62,41 @@ export default function HydroCapyApp() {
     }
   }, [isLoaded, isOnboarded]);
 
+  // Check intraday milestone crossings to celebrate gamification moments
+  useEffect(() => {
+    if (!isLoaded) return;
+    const prev = prevPctRef.current;
+    const curr = percentage;
+
+    // Milestone thresholds: 25%, 50%, 75%, 100%
+    if ((prev < 25 && curr >= 25) || (prev < 50 && curr >= 50) || (prev < 75 && curr >= 75)) {
+      soundFx.playChimeSound();
+    } else if (prev < 100 && curr >= 100) {
+      soundFx.playChimeSound();
+    }
+    prevPctRef.current = curr;
+  }, [percentage, isLoaded]);
+
   const handleLogDrink = (type: BeverageType, amountMl?: number) => {
+    const config = BEVERAGES[type];
+    const amount = amountMl || config.defaultAmount;
     addDrink(type, amountMl);
+
+    // Show quick Undo toast
+    const dummyId = Date.now().toString();
+    setLastLoggedToast({ id: dummyId, label: config.label, amount });
+
+    setTimeout(() => {
+      setLastLoggedToast((prev) => (prev?.id === dummyId ? null : prev));
+    }, 4500);
+  };
+
+  const handleUndoLastDrink = () => {
+    if (logs.length > 0) {
+      removeLog(logs[0].id);
+      soundFx.playSplashSound();
+      setLastLoggedToast(null);
+    }
   };
 
   const currentMascot = MASCOTS[activeMascot] || MASCOTS.capybara;
@@ -74,6 +111,41 @@ export default function HydroCapyApp() {
       </div>
     );
   }
+
+  // Current milestone banner details
+  const getMilestoneBanner = () => {
+    if (percentage >= 100) {
+      return {
+        bg: 'from-amber-300 via-amber-400 to-amber-500 text-amber-950',
+        icon: '🏆',
+        title: 'Goal Reached! Tap to Share Celebration Card',
+      };
+    }
+    if (percentage >= 75) {
+      return {
+        bg: 'from-amber-200 via-sky-200 to-sky-300 text-sky-950',
+        icon: '✨',
+        title: '75% Zen Flow Reached! Final stretch — Tap to celebrate',
+      };
+    }
+    if (percentage >= 50) {
+      return {
+        bg: 'from-sky-200 via-sky-300 to-indigo-200 text-indigo-950',
+        icon: '⚡',
+        title: "50% Halfway Peak! You're halfway there — Tap to celebrate",
+      };
+    }
+    if (percentage >= 25) {
+      return {
+        bg: 'from-sky-100 via-sky-200 to-amber-100 text-sky-900',
+        icon: '💧',
+        title: '25% Morning Dew! Great hydration momentum today',
+      };
+    }
+    return null;
+  };
+
+  const milestoneBanner = getMilestoneBanner();
 
   return (
     <main className="min-h-screen bg-[#FAF8F5] pb-36 flex flex-col justify-between relative overflow-x-hidden">
@@ -96,57 +168,32 @@ export default function HydroCapyApp() {
               <h1 className="text-base font-black text-stone-900 tracking-tight leading-tight">
                 {currentMascot.name}
               </h1>
-              <span className="text-[10px] font-bold text-stone-600 uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
                 Companion
               </span>
             </div>
           </button>
 
-          {/* Clean Mode Switcher: Mascot vs Pool */}
-          <div className="flex items-center bg-stone-200/60 p-1 rounded-full text-xs font-bold text-stone-600">
-            <button
-              onClick={() => setActiveTab('mascot')}
-              className={`px-3 py-1 rounded-full transition-all ${
-                activeTab === 'mascot'
-                  ? 'bg-white text-stone-950 shadow-xs'
-                  : 'hover:text-stone-900'
-              }`}
-            >
-              Mascot
-            </button>
-            <button
-              onClick={() => setActiveTab('pool')}
-              className={`px-3 py-1 rounded-full flex items-center gap-1 transition-all ${
-                activeTab === 'pool'
-                  ? 'bg-white text-stone-950 shadow-xs'
-                  : 'hover:text-stone-900'
-              }`}
-            >
-              <Waves className="w-3.5 h-3.5 text-sky-600" />
-              Pool
-            </button>
-          </div>
-
           {/* Top Actions: Streak Flame (opens Calendar), Calendar & Settings */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setIsCalendarOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-100/80 hover:bg-orange-200 text-orange-800 text-xs font-black transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-100/80 hover:bg-orange-200 text-orange-800 text-xs font-black transition-colors"
               title="Daily Streak & Monthly Calendar"
             >
               <Flame className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
-              <span>{streakDays}</span>
+              <span>{streakDays} Day Streak</span>
             </button>
             <button
               onClick={() => setIsCalendarOpen(true)}
-              className="p-1.5 rounded-full text-stone-500 hover:text-stone-900 transition-colors"
+              className="p-2 rounded-full text-stone-500 hover:text-stone-900 hover:bg-stone-200/50 transition-colors"
               title="Calendar View"
             >
               <CalendarIcon className="w-4 h-4" />
             </button>
             <button
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className="p-1.5 rounded-full text-stone-400 hover:text-stone-800 transition-colors"
+              className="p-2 rounded-full text-stone-400 hover:text-stone-800 hover:bg-stone-200/50 transition-colors"
               title="Settings"
             >
               <Settings2 className="w-4 h-4" />
@@ -239,49 +286,53 @@ export default function HydroCapyApp() {
         </div>
       )}
 
-      {/* 2. Main Hero Section */}
+      {/* 2. Main Hero Section — Core Intake Logging & Milestone Gamification */}
       <div className="max-w-md mx-auto px-4 w-full flex-1 flex flex-col justify-center">
         {/* Milestone Celebration Banner */}
-        {percentage >= 100 && (
+        {milestoneBanner && (
           <button
             onClick={() => setIsCelebrationOpen(true)}
-            className="mb-2 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-amber-950 py-2.5 px-4 rounded-2xl shadow-sm flex items-center justify-between hover:brightness-105 transition-all text-left w-full"
+            className={`mb-2 bg-gradient-to-r ${milestoneBanner.bg} py-2.5 px-4 rounded-2xl shadow-xs flex items-center justify-between hover:brightness-105 transition-all text-left w-full`}
           >
             <div className="flex items-center gap-2">
-              <span className="text-xl">🏆</span>
+              <span className="text-lg">{milestoneBanner.icon}</span>
               <div className="font-black text-xs">
-                Goal Reached! Tap to Share Celebration Card
+                {milestoneBanner.title}
               </div>
             </div>
-            <Sparkles className="w-4 h-4 text-amber-900 animate-bounce" />
+            <Sparkles className="w-4 h-4 opacity-75 animate-bounce" />
           </button>
         )}
 
-        {/* Tab 1: Waterllama Style Mascot Liquid Fill */}
-        {activeTab === 'mascot' && (
-          <WaterllamaMascot
-            currentMl={currentMl}
-            goalMl={goalMl}
-            percentage={percentage}
-            logs={logs}
-            onRemoveLog={removeLog}
-            breakdown={breakdown}
-            activeSkin={activeSkin}
-            activeMascot={activeMascot}
-            onOpenCelebration={() => setIsCelebrationOpen(true)}
-          />
-        )}
-
-        {/* Tab 2: 60FPS Fluid Physics Swimming Pool */}
-        {activeTab === 'pool' && (
-          <div className="w-full space-y-2 py-2">
-            <PoolFloatCanvas
-              dailyProgressPct={percentage}
-              isExpanded={true}
-            />
-          </div>
-        )}
+        {/* Dedicated Companion Liquid Fill & Intraday Milestone Track */}
+        <WaterllamaMascot
+          currentMl={currentMl}
+          goalMl={goalMl}
+          percentage={percentage}
+          logs={logs}
+          onRemoveLog={removeLog}
+          breakdown={breakdown}
+          activeSkin={activeSkin}
+          activeMascot={activeMascot}
+          onOpenCelebration={() => setIsCelebrationOpen(true)}
+        />
       </div>
+
+      {/* Floating Quick Undo Toast */}
+      {lastLoggedToast && (
+        <div className="fixed bottom-28 z-40 inset-x-0 flex justify-center pointer-events-none px-4">
+          <div className="pointer-events-auto bg-stone-900/95 text-white backdrop-blur-xl px-4 py-2.5 rounded-full shadow-xl flex items-center gap-3 text-xs font-bold border border-white/10 animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <span>+{lastLoggedToast.amount}ml {lastLoggedToast.label} logged 💧</span>
+            <button
+              onClick={handleUndoLastDrink}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-stone-800 hover:bg-stone-700 text-amber-300 font-black text-xs transition-colors"
+            >
+              <Undo2 className="w-3 h-3" />
+              Undo
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 3. Floating Quick-Log Dock & Challenge Pill */}
       <QuickLogBar
@@ -330,6 +381,7 @@ export default function HydroCapyApp() {
         currentMl={currentMl}
         percentage={percentage}
         streakDays={streakDays}
+        activeMascot={activeMascot}
       />
     </main>
   );

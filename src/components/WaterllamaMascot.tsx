@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { BEVERAGES, MASCOTS } from '../store/hydrationStore';
 import { BeverageType, DrinkLog, CapySkin, MascotId } from '../types';
 import { soundFx } from '../utils/soundEffects';
-import { Sparkles, Trash2, ChevronDown, PartyPopper } from 'lucide-react';
+import { Sparkles, Trash2, ChevronDown, PartyPopper, Trophy, Zap, Droplet } from 'lucide-react';
 
 interface WaterllamaMascotProps {
   currentMl: number;
@@ -40,6 +40,17 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
   const prevPercentageRef = useRef(percentage);
 
   const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
+
+  // Intraday Gamification Milestones
+  const milestones = [
+    { pct: 25, label: '25%', name: 'First Sip', icon: '💧', targetMl: Math.round(goalMl * 0.25) },
+    { pct: 50, label: '50%', name: 'Halfway', icon: '⚡', targetMl: Math.round(goalMl * 0.50) },
+    { pct: 75, label: '75%', name: 'Zen Flow', icon: '✨', targetMl: Math.round(goalMl * 0.75) },
+    { pct: 100, label: '100%', name: 'Goal Master', icon: '🏆', targetMl: goalMl },
+  ];
+
+  const nextMilestone = milestones.find((m) => currentMl < m.targetMl);
+  const mlToNextMilestone = nextMilestone ? Math.max(0, nextMilestone.targetMl - currentMl) : 0;
 
   // Play celebratory chime when passing 100%
   useEffect(() => {
@@ -130,7 +141,7 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
     <div className="w-full flex flex-col items-center select-none">
       {/* 1. Dynamic Waterllama Header */}
       {percentage >= 100 ? (
-        <div className="text-center my-2">
+        <div className="text-center my-1.5">
           <h2 className="text-3xl font-black text-sky-500 tracking-tight mb-1">
             Fresh {dayName}!
           </h2>
@@ -140,7 +151,7 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
           </div>
         </div>
       ) : (
-        <div className="text-center my-2">
+        <div className="text-center my-1.5">
           <h2 className="text-[11px] font-black text-stone-400 uppercase tracking-widest mb-0.5">
             Daily Hydration
           </h2>
@@ -157,6 +168,66 @@ export const WaterllamaMascot: React.FC<WaterllamaMascotProps> = ({
           </div>
         </div>
       )}
+
+      {/* Intraday Gamification Milestone Track */}
+      <div className="w-full max-w-xs mx-auto mt-2 mb-1 px-4">
+        <div className="relative flex items-center justify-between">
+          {/* Background Track Line */}
+          <div className="absolute top-1/2 left-3 right-3 h-1 bg-stone-200/80 -translate-y-1/2 rounded-full -z-0" />
+          
+          {/* Active Colored Fill Line */}
+          <div 
+            className="absolute top-1/2 left-3 h-1 bg-gradient-to-r from-sky-400 via-amber-400 to-amber-500 -translate-y-1/2 rounded-full transition-all duration-500 -z-0 max-w-[calc(100%-1.5rem)]"
+            style={{ width: `${Math.min(100, Math.max(0, (percentage / 100) * 100))}%` }}
+          />
+
+          {milestones.map((m) => {
+            const isReached = percentage >= m.pct;
+            const isCurrentTarget = nextMilestone?.pct === m.pct;
+
+            return (
+              <button
+                key={m.pct}
+                onClick={onOpenCelebration}
+                className="relative z-10 flex flex-col items-center group cursor-pointer focus:outline-none"
+                title={`${m.name} (${m.pct}% - ${m.targetMl}ml)`}
+              >
+                <motion.div
+                  whileTap={{ scale: 0.88 }}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${
+                    isReached
+                      ? 'bg-gradient-to-br from-sky-400 to-sky-600 text-white shadow-xs shadow-sky-400/50 scale-105'
+                      : isCurrentTarget
+                      ? 'bg-white border-2 border-amber-400 text-stone-700 shadow-xs ring-4 ring-amber-100/60'
+                      : 'bg-white border-2 border-stone-200 text-stone-400'
+                  }`}
+                >
+                  <span>{m.icon}</span>
+                </motion.div>
+                <span className={`text-[10px] font-extrabold mt-1 tracking-tight ${
+                  isReached ? 'text-sky-600' : isCurrentTarget ? 'text-amber-600 font-black' : 'text-stone-400'
+                }`}>
+                  {m.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Motivational Milestone Callout */}
+        <div className="text-center mt-1">
+          {percentage >= 100 ? (
+            <span className="text-[11px] font-black text-amber-600 inline-flex items-center gap-1">
+              <Sparkles className="w-3 h-3 animate-spin" />
+              All 4 Daily Milestones Achieved!
+            </span>
+          ) : (
+            <span className="text-[11px] font-bold text-stone-500">
+              <strong className="text-stone-900 font-mono font-black">{mlToNextMilestone} ml</strong> to {nextMilestone?.name} {nextMilestone?.icon}
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* 2. Hero Mascot Container with Tap to Toggle Illustration */}
       <div 

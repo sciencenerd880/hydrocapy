@@ -71,6 +71,10 @@ export const QuickLogBar: React.FC<QuickLogBarProps> = ({
     onLogDrink(type, amountMl);
   };
 
+  const handleLogDroplet = (type: BeverageType, amountMl: number) => {
+    handleConfirmVesselLog(type, amountMl);
+  };
+
   const beverageButtons: { type: BeverageType; Icon: React.FC<{ size?: number }>; label: string; amount: number }[] = [
     { type: 'water', Icon: WaterIcon, label: 'Water', amount: 250 },
     { type: 'green_tea', Icon: TeaIcon, label: 'Tea', amount: 200 },
@@ -154,15 +158,16 @@ export const QuickLogBar: React.FC<QuickLogBarProps> = ({
             <span>{avatarEmoji}</span>
           </motion.button>
 
-          {/* Beverage Vessel Buttons */}
+          {/* Beverage Quick Log Buttons (1-Tap Fast Log) */}
           {beverageButtons.map(({ type, Icon, label, amount }) => (
             <motion.button
               key={type}
               whileTap={{ scale: 0.84, y: 1 }}
               whileHover={{ scale: 1.06 }}
               transition={{ type: 'spring', stiffness: 450, damping: 18 }}
-              onClick={() => handleOpenVesselModal(type)}
+              onClick={() => handleLogDroplet(type, amount)}
               className="flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl hover:bg-stone-50 active:bg-stone-100 transition-colors group relative"
+              title={`Quick log +${amount}ml ${label}`}
             >
               <div className="w-8 h-8 flex items-center justify-center transition-transform group-hover:-translate-y-0.5">
                 <Icon size={24} />

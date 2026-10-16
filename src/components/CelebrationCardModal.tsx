@@ -2,7 +2,9 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Share2, Check, Copy } from 'lucide-react';
+import { X, Share2, Check, Sparkles, Trophy } from 'lucide-react';
+import { MascotId } from '../types';
+import { MASCOTS } from '../store/hydrationStore';
 
 interface CelebrationCardModalProps {
   isOpen: boolean;
@@ -10,6 +12,7 @@ interface CelebrationCardModalProps {
   currentMl: number;
   percentage: number;
   streakDays: number;
+  activeMascot?: MascotId;
 }
 
 export const CelebrationCardModal: React.FC<CelebrationCardModalProps> = ({
@@ -18,18 +21,26 @@ export const CelebrationCardModal: React.FC<CelebrationCardModalProps> = ({
   currentMl,
   percentage,
   streakDays,
+  activeMascot = 'capybara',
 }) => {
   const [copied, setCopied] = React.useState(false);
   const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
+  const companion = MASCOTS[activeMascot] || MASCOTS.capybara;
 
   if (!isOpen) return null;
 
+  const milestoneTitle = 
+    percentage >= 100 ? 'Daily Champion 🏆' :
+    percentage >= 75 ? 'Golden Flow ✨' :
+    percentage >= 50 ? 'Halfway Hero ⚡' :
+    percentage >= 25 ? 'Morning Dew 💧' : 'Fresh Start 🌱';
+
   const handleShare = async () => {
-    const text = `I drank ${currentMl.toLocaleString()}ml today (${percentage}% of goal) with HydroCapy! 🦫🍊`;
+    const text = `I drank ${currentMl.toLocaleString()}ml today (${percentage}% of goal • ${milestoneTitle}) with ${companion.name}! ${companion.emoji}💧`;
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
-          title: 'HydroCapy Daily Hydration',
+          title: `HydroCapy - ${milestoneTitle}`,
           text,
           url: window.location.href,
         });
@@ -68,20 +79,22 @@ export const CelebrationCardModal: React.FC<CelebrationCardModalProps> = ({
           </button>
 
           {/* Celebratory Postcard (Waterllama Screen 18 Style) */}
-          <div className="w-full bg-gradient-to-b from-sky-50 to-amber-50/60 rounded-3xl p-5 border border-sky-100/80 mb-5 relative overflow-hidden">
-            <span className="text-[11px] font-black uppercase tracking-widest text-sky-600 block mb-1">
-              Celebration Card
-            </span>
+          <div className="w-full bg-gradient-to-b from-sky-50 via-amber-50/50 to-orange-50/60 rounded-3xl p-5 border border-sky-100/80 mb-5 relative overflow-hidden">
+            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-700 text-[10px] font-black uppercase tracking-wider mb-2">
+              <Sparkles className="w-3 h-3 text-sky-500" />
+              <span>{milestoneTitle}</span>
+            </div>
+
             <h3 className="text-xl font-black text-stone-900 tracking-tight uppercase leading-tight mb-3">
               MY FRESH<br />
               <span className="text-sky-500">{dayName}</span>
             </h3>
 
-            {/* Capy Graphic */}
-            <div className="w-28 h-28 mx-auto my-2 relative flex items-center justify-center">
-              <span className="text-6xl animate-bounce">🦫</span>
-              <span className="absolute -top-1 -right-1 text-2xl">🍊</span>
-              <span className="absolute -bottom-1 -left-1 text-2xl">♨️</span>
+            {/* Companion Graphic */}
+            <div className="w-28 h-28 mx-auto my-2 relative flex items-center justify-center bg-white/70 rounded-full shadow-inner border border-stone-200/40">
+              <span className="text-6xl animate-bounce">{companion.emoji}</span>
+              <span className="absolute -top-1 -right-1 text-2xl">✨</span>
+              <span className="absolute -bottom-1 -left-1 text-2xl">💧</span>
             </div>
 
             <div className="mt-3 pt-3 border-t border-sky-200/40">
